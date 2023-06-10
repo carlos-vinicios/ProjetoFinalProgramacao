@@ -10,8 +10,15 @@ const databaseListStyle = {
     bgcolor: 'background.paper',
     borderRadius: '10px',
     border: '1px solid #d3d3d3',
-    margin: 2,
-    minHeight: "300px"
+    width: '99%',
+    height: '86vh',
+    maxHeight: '86vh',
+    ml: 2
+}
+
+const headerTitleStyle = {
+    textAlign: "center",
+    m: 2
 }
 
 export function MainWindow() {
@@ -57,8 +64,10 @@ export function MainWindow() {
     }
 
     return (
-        <Grid container justifyContent='center' alignItems='center'>
-            <Typography variant='h3'>Sistema de Análise de Curvas</Typography>
+        <Grid container spacing={2} lg={12}>
+            <Grid item lg={12}>
+                <Typography variant='h3' sx={headerTitleStyle}>Sistema de Análise de Curvas</Typography>
+            </Grid>
             <Grid item lg={10}>
                 <List sx={databaseListStyle}>
                     {databases.map(database => (
@@ -69,7 +78,7 @@ export function MainWindow() {
                     ))}
                 </List>
             </Grid>
-            <Grid item lg={2} spacing={2}>
+            <Grid item lg={2}>
                 <Button 
                     variant='contained' color='primary'
                     onClick={loadDatabase}

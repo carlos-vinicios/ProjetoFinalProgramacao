@@ -80,14 +80,14 @@ app.whenReady().then(() => {
       return response;
     });
 
-    ipcMain.handle("listDatabases", async (event, path) => {
+    ipcMain.handle("listDatabases", async (event) => {
         return fs.readdirSync(databasesPath)
     });
 
     ipcMain.handle("deleteDatabase", async (event, filename) => {
         var response = {msg: "Base de Dados removida com sucesso", ok: true}
         try {
-            fs.rmSync(databasesPath + "/" + filename)
+            fs.rmSync(path.join(databasesPath, filename))
         } catch (error) {
             response.msg = "Falha na remoção: " + error
             response.ok = false
@@ -95,15 +95,17 @@ app.whenReady().then(() => {
         return response
     });
 
-    ipcMain.handle('readDatabase', async (event, path) => {
-        var fileContent = fs.readFileSync(path, 'utf8');
+    ipcMain.handle('readDatabase', async (event, filePath) => {
+        if(filePath === path.basename(filePath))
+            filePath = path.join(databasesPath, filePath);
+        var fileContent = fs.readFileSync(filePath, 'utf8');
         return fileContent;
     });
 
     ipcMain.handle('saveDatabase', async (event, filename, dataContent) => {
         var response = {msg: "Conteúdo Salvo", ok: true}
         try{
-            fs.writeFileSync(databasesPath + "/" + filename, dataContent)
+            fs.writeFileSync(path.join(databasesPath, filename), dataContent)
         }catch(err){
             response.msg = "Falha no salvamento" + err
             response.ok = false

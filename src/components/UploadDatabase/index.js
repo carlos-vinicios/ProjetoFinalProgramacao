@@ -171,7 +171,6 @@ export function UploadDatabase({filePath, open, handleClose}) {
                         </Grid>
                         <Grid item lg={12}>
                             <Paper elevation={3} id='preview-chart' sx={previewChartStyle}>
-
                             </Paper>
                         </Grid>
                     </Grid>
