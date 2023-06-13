@@ -11,6 +11,7 @@ const path = require('path');
 const url = require('url');
 
 const databasesPath = "./databases"
+const configsPath = "./databasesConfig"
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -112,4 +113,22 @@ app.whenReady().then(() => {
         }
         return response
     });
+
+    ipcMain.handle('readClasses', async (event, databaseName) => {
+        var databaseConfigFile = databaseName.replace(".csv", ".json")
+        var databaseConfig = fs.readFileSync(path.join(configsPath, databaseConfigFile), 'utf8')
+        return JSON.parse(databaseConfig)
+    });
+
+    ipcMain.handle('saveClasses', async (event, dataContent, databaseName) => {
+        var response = {msg: "Conteúdo Salvo", ok: true}
+        var databaseConfigFile = databaseName.replace(".csv", ".json")
+        try{
+            fs.writeFileSync(path.join(configsPath, databaseConfigFile), JSON.stringify(dataContent))
+        }catch(err){
+            response.msg = "Falha no salvamento" + err
+            response.ok = false
+        }
+        return response
+    })
 });
