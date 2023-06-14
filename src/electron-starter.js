@@ -116,8 +116,12 @@ app.whenReady().then(() => {
 
     ipcMain.handle('readClasses', async (event, databaseName) => {
         var databaseConfigFile = databaseName.replace(".csv", ".json")
-        var databaseConfig = fs.readFileSync(path.join(configsPath, databaseConfigFile), 'utf8')
-        return JSON.parse(databaseConfig)
+        try{
+            var databaseConfig = fs.readFileSync(path.join(configsPath, databaseConfigFile), 'utf8')
+            return JSON.parse(databaseConfig)
+        }catch(err){
+            return {}
+        }
     });
 
     ipcMain.handle('saveClasses', async (event, dataContent, databaseName) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
-import { readCSV } from "danfojs"
+import { readCSV, toCSV } from "danfojs"
 import { 
     MenuItem, Paper, Select, FormControl, 
     InputLabel, Typography, Button, Table, TableHead, 
@@ -28,14 +28,10 @@ const databaseTitleStyle = {
 }
 
 const selectedPointListStyle = {
-    maxHeight: '30vh', overflow: 'auto',
-    height: '30vh',
+    maxHeight: '40vh', overflow: 'auto',
+    height: '40vh',
     border: '1px solid #ccc',
     borderRadius: '10px',
-}
-
-const commentsStyle = {
-    height: '10vh'
 }
 
 const selectedItemsStyle = {
@@ -53,17 +49,15 @@ export function DatabaseAnnotation(){
     const [databaseFilename, setDatabaseFilename] = useState("");
     const [dataFrame, setDataFrame] = useState(null);
     const [newClassOpen, setNewClassOpen] = useState(false);
-
+    
+    const [mainPlot, setMainPlot] = useState(null);
     const [xVariable, setXVariable] = useState("");
     const [yVariable, setYVariable] = useState("");
     
     const [classes, setClasses] = useState({});
     const [renderedClasses, setRenderedClasses] = useState([]);
     const [dataClass, setDataClass] = useState("");
-    const [selectedPoints, setSelectedPoints] = useState([]);
-    const [coments, setComents] = useState("");
-    
-    const mainPlot = window.document.getElementById("main-chart");
+    const [selectedPoints, setSelectedPoints] = useState([]);    
 
     useEffect(() => {
         if(mainPlot && xVariable && yVariable && dataFrame){
@@ -99,6 +93,7 @@ export function DatabaseAnnotation(){
             dataFrame.plot("main-chart").scatter({
                 config: { x: xVariable, y: yVariable },
             })
+            setMainPlot(window.document.getElementById("main-chart"))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps 
     }, [xVariable, yVariable])
@@ -109,9 +104,17 @@ export function DatabaseAnnotation(){
             for(const key in classes)
                 for(var cat_index in classes[key].categories)
                     classLabels.push(`${key} - ${classes[key].categories[cat_index]}`)
-            setRenderedClasses(classLabels)
         }
+        setRenderedClasses(classLabels)
     }, [classes])
+
+    useEffect(() => {
+        if(dataFrame)
+            window.electron.saveDatabase(databaseFilename, toCSV(dataFrame)).then(response => {
+                if(!response.ok)
+                    console.log(response.msg)
+            })
+    }, [dataFrame, databaseFilename])
 
     const handleChangeXVariable = (event) => {
         setXVariable(event.target.value)
@@ -175,6 +178,13 @@ export function DatabaseAnnotation(){
         setNewClassOpen(false);
     }
 
+    const addNewColumn = (className, dtype) => {
+        var fill_value = dtype === "Categórico" ? '' : 0
+        var size = dataFrame.shape[0]
+        var new_col = Array(size).fill(fill_value)
+        setDataFrame(dataFrame.addColumn(className, new_col))
+    }
+
     const newClass = (className, dtype, categories) => {
         var newClasses = {...classes}
         newClasses[className] = {
@@ -182,6 +192,7 @@ export function DatabaseAnnotation(){
             categories: categories
         }
         setClasses(newClasses)
+        addNewColumn(className, dtype)
         window.electron.saveClasses(newClasses, databaseFilename).then(r => console.log(r))
     }
 
@@ -189,11 +200,27 @@ export function DatabaseAnnotation(){
         var newClasses = {...classes}
         delete newClasses[classToRemove]
         setClasses(newClasses)
+        setDataFrame(dataFrame.drop({ columns: [classToRemove]}))
         window.electron.saveClasses(newClasses, databaseFilename).then(r => console.log(r))
     }
 
     const handleChangeDataClass = (event) => {
         setDataClass(event.target.value)
+    }
+
+    const saveAnnotations = () => {
+        var class_split = dataClass.split("-")
+        var className = class_split[0].trim()
+        var category = class_split[1]
+        var column = dataFrame[className].values
+        for(var i in selectedPoints){
+            var point = selectedPoints[i]
+            var index = point.pointNumber
+            column[index] = category
+        }
+        var newDataFrame = dataFrame.drop({ columns: [className]});
+        newDataFrame = newDataFrame.addColumn(className, column)
+        setDataFrame(newDataFrame)
     }
 
     return (
@@ -293,16 +320,16 @@ export function DatabaseAnnotation(){
                         </List>
                     </Grid>
                     <Grid item lg={12}>
-                        <TextField
-                            id="comments-text-area"
-                            label="Comentários"
-                            multiline
+                        <Button 
+                            variant='contained' color='primary'
+                            onClick={saveAnnotations}
                             fullWidth
-                            maxRows={10}
-                            inputProps={{
-                                style: commentsStyle,
+                            sx={{
+                                height: "5rem"
                             }}
-                        />
+                        >
+                            Salvar Anotações
+                        </Button>
                     </Grid>
                 </Grid>
                 <Grid item lg={12}>
