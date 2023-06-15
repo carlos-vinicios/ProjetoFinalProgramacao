@@ -11,9 +11,10 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { AnnotionClass } from "../../components/AnnotationClass";
+import { AnnotationExport } from "../../components/AnnotationExport";
 
 const mainChartStyle = {
-    minHeight: '55vh', width: '100%'
+    minHeight: '80vh', width: '100%'
 }
 
 const databasePreviewStyle = {
@@ -28,8 +29,8 @@ const databaseTitleStyle = {
 }
 
 const selectedPointListStyle = {
-    maxHeight: '40vh', overflow: 'auto',
-    height: '40vh',
+    maxHeight: '55vh', overflow: 'auto',
+    height: '55vh',
     border: '1px solid #ccc',
     borderRadius: '10px',
 }
@@ -49,6 +50,7 @@ export function DatabaseAnnotation(){
     const [databaseFilename, setDatabaseFilename] = useState("");
     const [dataFrame, setDataFrame] = useState(null);
     const [newClassOpen, setNewClassOpen] = useState(false);
+    const [exportOpen, setExportOpen] = useState(false);
     
     const [mainPlot, setMainPlot] = useState(null);
     const [xVariable, setXVariable] = useState("");
@@ -91,7 +93,11 @@ export function DatabaseAnnotation(){
     useEffect(() => {
         if(dataFrame !== null && xVariable !== "" && yVariable !== ""){
             dataFrame.plot("main-chart").scatter({
-                config: { x: xVariable, y: yVariable },
+                config: { 
+                    x: xVariable, 
+                    y: yVariable,
+                    type: 'scattergl' 
+                },
             })
             setMainPlot(window.document.getElementById("main-chart"))
         }
@@ -122,32 +128,6 @@ export function DatabaseAnnotation(){
 
     const handleChangeYVariable = (event) => {
         setYVariable(event.target.value)
-    }
-
-    const createPreviewTable = () => {
-        if(dataFrame !== null){
-            var head = dataFrame.head(10)
-            return (
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            {head.columns.map(element => (
-                                <TableCell>{element}</TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {head.values.map(dataRow =>(
-                            <TableRow>
-                                {dataRow.map(element => (
-                                    <TableCell>{element}</TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            )
-        }
     }
 
     const renderSelectedPoints = () => {
@@ -221,6 +201,23 @@ export function DatabaseAnnotation(){
         var newDataFrame = dataFrame.drop({ columns: [className]});
         newDataFrame = newDataFrame.addColumn(className, column)
         setDataFrame(newDataFrame)
+        setSelectedPoints([])
+        setDataClass('')
+    }
+
+    const openDialogExport = () => {
+        setExportOpen(true);
+    }
+
+    const closeDialogExport = () => {
+        setExportOpen(false);
+    }
+
+    const showPointAnnotationElement = () => {
+        if(selectedPoints.length > 0)
+            return "block"
+        
+        return "none"
     }
 
     return (
@@ -277,12 +274,12 @@ export function DatabaseAnnotation(){
                     <Paper elevation={3} id='main-chart' sx={mainChartStyle}>
                     </Paper>
                 </Grid>
-                <Grid item lg={12}>
+                {/* <Grid item lg={12}>
                     <Typography variant="p">Visualização da Base Anotada:</Typography>
                     <Paper elevation={3} sx={databasePreviewStyle} id='table-view'>
-                        {createPreviewTable()}
+                        createPreviewTable()
                     </Paper>
-                </Grid>
+                </Grid> */}
             </Grid>
             <Grid item container lg={3} md={3} sm={3} xs={3} spacing={2}>
                 <Grid item container lg={12} md={12} sm={12} xs={12} spacing={2}>
@@ -313,19 +310,21 @@ export function DatabaseAnnotation(){
                             <EditIcon />
                         </IconButton>
                     </Grid>
-                    <Grid item lg={12}>
-                        <Typography variant="h6">Pontos Selecionados:</Typography>
-                        <List sx={selectedPointListStyle}>
+                    <Grid item lg={12} sx={{height: "62vh"}}>
+                        <Typography variant="h6" display={showPointAnnotationElement()}>Pontos Selecionados:</Typography>
+                        <List sx={{...selectedPointListStyle, display: showPointAnnotationElement()}}>
                             {renderSelectedPoints()}
                         </List>
                     </Grid>
-                    <Grid item lg={12}>
+                    <Grid item lg={12} sx={{height: "10vh"}}>
                         <Button 
                             variant='contained' color='primary'
+                            disabled={selectedPoints.length === 0 || dataClass === ""}
                             onClick={saveAnnotations}
                             fullWidth
                             sx={{
-                                height: "5rem"
+                                height: "5rem",
+                                display: showPointAnnotationElement()
                             }}
                         >
                             Salvar Anotações
@@ -335,7 +334,7 @@ export function DatabaseAnnotation(){
                 <Grid item lg={12}>
                     <Button 
                         variant='contained' color='primary'
-                        // onClick={exportDatabase}
+                        onClick={openDialogExport}
                         fullWidth
                         sx={{
                             height: "5rem"
@@ -351,6 +350,13 @@ export function DatabaseAnnotation(){
                 classes={classes}
                 addNewClass={newClass}
                 removeClass={removeClass}
+            />
+            <AnnotationExport
+                open={exportOpen}
+                handleClose={closeDialogExport}
+                dataFrame={dataFrame}
+                qtdCols={dataFrame ? dataFrame.columns.length : 0}
+                filename={databaseFilename}
             />
         </Grid>
     )

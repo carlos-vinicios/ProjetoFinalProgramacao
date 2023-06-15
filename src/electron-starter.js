@@ -114,6 +114,17 @@ app.whenReady().then(() => {
         return response
     });
 
+    ipcMain.handle('exportDatabase', async (event, filePath, dataContent) => {
+        var response = {msg: "Conteúdo Salvo", ok: true}
+        try{
+            fs.writeFileSync(filePath, dataContent)
+        }catch(err){
+            response.msg = "Falha no salvamento" + err
+            response.ok = false
+        }
+        return response
+    });
+
     ipcMain.handle('readClasses', async (event, databaseName) => {
         var databaseConfigFile = databaseName.replace(".csv", ".json")
         try{
