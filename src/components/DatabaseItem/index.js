@@ -43,14 +43,16 @@ export function DatabaseItem({databaseName, deleteCallback}) {
                     <DeleteIcon />
                 </IconButton>
             }
-            onClick={openDatabaseAnnotation}
         >
-            <ListItemAvatar>
+            <ListItemAvatar
+                onClick={openDatabaseAnnotation}
+            >
                 <Avatar>
                     <FolderIcon />
                 </Avatar>
             </ListItemAvatar>
             <ListItemText
+                onClick={openDatabaseAnnotation}
                 primary={databaseName}
             />
         </ListItem>

@@ -118,7 +118,7 @@ export function DatabaseAnnotation(){
         if(dataFrame)
             window.electron.saveDatabase(databaseFilename, toCSV(dataFrame)).then(response => {
                 if(!response.ok)
-                    console.log(response.msg)
+                    alert(response.msg)
             })
     }, [dataFrame, databaseFilename])
 

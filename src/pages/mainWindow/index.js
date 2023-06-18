@@ -44,8 +44,10 @@ export function MainWindow() {
         };
         window.electron.openDialog('showOpenDialog', dialogConfig)
             .then(result => {
-                setFilePath(result.filePaths[0]);
-                setUploadOpen(true)
+                if(!result.canceled){
+                    setFilePath(result.filePaths[0]);
+                    setUploadOpen(true)
+                }
             });
     }
     
@@ -56,10 +58,10 @@ export function MainWindow() {
 
     const handleDeleteDatabase = (databaseName) => {
         window.electron.deleteDatabase(databaseName).then(response => {
-            if(response.ok){
+            if(response.ok)
                 listDatabases()
-            }
-            console.log(response)
+            
+            alert(response.msg)
         })
     }
 

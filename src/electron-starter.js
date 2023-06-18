@@ -108,7 +108,7 @@ app.whenReady().then(() => {
         try{
             fs.writeFileSync(path.join(databasesPath, filename), dataContent)
         }catch(err){
-            response.msg = "Falha no salvamento" + err
+            response.msg = "Falha no salvamento: " + err
             response.ok = false
         }
         return response
@@ -119,7 +119,7 @@ app.whenReady().then(() => {
         try{
             fs.writeFileSync(filePath, dataContent)
         }catch(err){
-            response.msg = "Falha no salvamento" + err
+            response.msg = "Falha no salvamento: " + err
             response.ok = false
         }
         return response
@@ -141,7 +141,7 @@ app.whenReady().then(() => {
         try{
             fs.writeFileSync(path.join(configsPath, databaseConfigFile), JSON.stringify(dataContent))
         }catch(err){
-            response.msg = "Falha no salvamento" + err
+            response.msg = "Falha no salvamento: " + err
             response.ok = false
         }
         return response
