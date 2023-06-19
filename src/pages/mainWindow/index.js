@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
-import { Button, Typography } from '@mui/material';
-import List from '@mui/material/List'
+import { Button, Typography, Grid } from '@mui/material';
+import List from '@mui/material/List';
 
 import { DatabaseItem } from '../../components/DatabaseItem';
-import { UploadDatabase } from '../../components/UploadDatabase';
+// import { UploadDatabase } from '../../components/UploadDatabase';
 
 const databaseListStyle = { 
     bgcolor: 'background.paper',
@@ -66,7 +65,7 @@ export function MainWindow() {
     }
 
     return (
-        <Grid container spacing={2} lg={12}>
+        <Grid container spacing={2}>
             <Grid item lg={12}>
                 <Typography variant='h3' sx={headerTitleStyle}>Sistema de Análise de Curvas</Typography>
             </Grid>
@@ -76,6 +75,7 @@ export function MainWindow() {
                         <DatabaseItem 
                             databaseName={database} 
                             deleteCallback={handleDeleteDatabase}
+                            key={database}
                         />
                     ))}
                 </List>
@@ -88,11 +88,12 @@ export function MainWindow() {
                     sx={{
                         height: "5rem"
                     }}
+                    data-testid="loadDatabaseButton"
                 >
                     Carregar Base
                 </Button>
             </Grid>
-            <UploadDatabase filePath={filePath} open={uploadOpen} handleClose={closeUploadDatabase} />
+            {/* <UploadDatabase filePath={filePath} open={uploadOpen} handleClose={closeUploadDatabase} /> */}
         </Grid>
     )
 }
