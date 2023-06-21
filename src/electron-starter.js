@@ -88,6 +88,8 @@ app.whenReady().then(() => {
     ipcMain.handle("deleteDatabase", async (event, filename) => {
         var response = {msg: "Base de Dados removida com sucesso", ok: true}
         try {
+            var databaseConfigFile = filename.replace(".csv", ".json")
+            fs.rmSync(path.join(configsPath, databaseConfigFile))
             fs.rmSync(path.join(databasesPath, filename))
         } catch (error) {
             response.msg = "Falha na remoção: " + error

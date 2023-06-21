@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { readCSV, toCSV } from "danfojs"
 import { 
     MenuItem, Paper, Select, FormControl, 
-    InputLabel, Typography, Button, Table, TableHead, 
-    TableCell, TableRow, TableBody, IconButton, List,
-    TextField, Grid, ListItem
+    InputLabel, Typography, Button, IconButton, List,
+    Grid, ListItem
 } from '@mui/material';
 
 import EditIcon from '@mui/icons-material/Edit';
@@ -15,12 +14,6 @@ import { AnnotationExport } from "../../components/AnnotationExport";
 
 const mainChartStyle = {
     minHeight: '80vh', width: '100%'
-}
-
-const databasePreviewStyle = {
-    minHeight: '20vh', width: '100%',
-    maxHeight: '20vh', overflow: 'auto',
-    mt: 2
 }
 
 const databaseTitleStyle = {
@@ -44,6 +37,8 @@ const backButtonStyle = {
     top: '1rem', left: '1rem'
 }
 
+const defaultChartColor = "#1f77b4"
+
 export function DatabaseAnnotation(){
     const navigate = useNavigate();
 
@@ -59,7 +54,8 @@ export function DatabaseAnnotation(){
     const [classes, setClasses] = useState({});
     const [renderedClasses, setRenderedClasses] = useState([]);
     const [dataClass, setDataClass] = useState("");
-    const [selectedPoints, setSelectedPoints] = useState([]);    
+    const [selectedPoints, setSelectedPoints] = useState([]);
+    const [chartColors, setChartColors] = useState([]);
 
     useEffect(() => {
         if(mainPlot && xVariable && yVariable && dataFrame){
@@ -81,6 +77,7 @@ export function DatabaseAnnotation(){
                 var fileBlob = new Blob([fileContent])
                 readCSV(fileBlob).then(df => {
                     setDataFrame(df)
+                    setChartColors(Array(df.shape[0]).fill(defaultChartColor))
                 })
             })
             window.electron.readClasses(databaseFilename).then(classes => {
@@ -91,28 +88,68 @@ export function DatabaseAnnotation(){
     }, [databaseFilename])
 
     useEffect(() => {
-        if(dataFrame !== null && xVariable !== "" && yVariable !== ""){
-            dataFrame.plot("main-chart").scatter({
-                config: { 
-                    x: xVariable, 
-                    y: yVariable,
-                    type: 'scattergl' 
+        var colors = chartColors
+        if(
+            dataFrame !== null && dataClass !== ""
+            && xVariable !== "" && yVariable !== ""
+        ){
+            var class_split = dataClass.split("-")
+            var className = class_split[0].trim()
+            for(var cat_index in classes[className].categories){
+                colors = pointsMark(
+                    colors, className, 
+                    classes[className].categories[cat_index], cat_index
+                )
+            }
+            setChartColors(colors)
+
+            var data = [{
+                x: dataFrame[xVariable].values, 
+                y: dataFrame[yVariable].values, 
+                type:'scattergl',
+                mode:'markers', 
+                marker:{color: colors}
+            }]
+
+            var layout = {
+                hovermode:'closest',
+                xaxis: {
+                    title: {
+                        text: xVariable,
+                        font: {
+                            family: 'Courier New, monospace',
+                            size: 18,
+                            color: '#7f7f7f'
+                        }
+                    },
                 },
-            })
+                yaxis: {
+                    title: {
+                        text: yVariable,
+                        font: {
+                            family: 'Courier New, monospace',
+                            size: 18,
+                            color: '#7f7f7f'
+                        }
+                    }
+                }
+            };
+
+            window.Plotly.newPlot('main-chart', data, layout);
             setMainPlot(window.document.getElementById("main-chart"))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps 
-    }, [xVariable, yVariable])
+    }, [xVariable, yVariable, dataClass])
 
     useEffect(() => {
         var classLabels = []
-        if(Object.keys(classes).length > 0){
+        if(Object.keys(classes).length > 0 && dataFrame !== null){
             for(const key in classes)
                 for(var cat_index in classes[key].categories)
                     classLabels.push(`${key} - ${classes[key].categories[cat_index]}`)
         }
         setRenderedClasses(classLabels)
-    }, [classes])
+    }, [dataFrame, classes])
 
     useEffect(() => {
         if(dataFrame)
@@ -121,6 +158,24 @@ export function DatabaseAnnotation(){
                     alert(response.msg)
             })
     }, [dataFrame, databaseFilename])
+
+    const pointsMark = (colors, key, category, categoryIndex) => {
+        console.log(colors, key, category, categoryIndex)
+        var points_indexes = dataFrame.loc({ rows: dataFrame[key].eq(category)}).index
+        for(var pp_index in points_indexes){
+            colors[points_indexes[pp_index]] = classes[key].colors[categoryIndex]
+        }
+        return colors
+    }
+
+    const updateChartColors = (colors, curveNumber) => {
+        var update = {'marker':{color: colors}};
+        if(mainPlot && dataFrame){
+            window.Plotly.restyle('main-chart', update, [curveNumber]);
+        }
+        setChartColors(colors)
+        setMainPlot(window.document.getElementById("main-chart"))
+    }
 
     const handleChangeXVariable = (event) => {
         setXVariable(event.target.value)
@@ -165,11 +220,12 @@ export function DatabaseAnnotation(){
         setDataFrame(dataFrame.addColumn(className, new_col))
     }
 
-    const newClass = (className, dtype, categories) => {
+    const newClass = (className, dtype, categories, colors) => {
         var newClasses = {...classes}
         newClasses[className] = {
             type: dtype,
-            categories: categories
+            categories: categories,
+            colors: colors
         }
         setClasses(newClasses)
         addNewColumn(className, dtype)
@@ -189,15 +245,22 @@ export function DatabaseAnnotation(){
     }
 
     const saveAnnotations = () => {
+        var colors = chartColors
+
         var class_split = dataClass.split("-")
         var className = class_split[0].trim()
         var category = class_split[1]
+        var categoryIndex = classes[className].color.indexOf(category)
         var column = dataFrame[className].values
+
         for(var i in selectedPoints){
             var point = selectedPoints[i]
             var index = point.pointNumber
+            var curveNumber = point.curveNumber
             column[index] = category
+            colors[index] = classes[className].colors[categoryIndex]
         }
+        updateChartColors(colors, curveNumber)
         var newDataFrame = dataFrame.drop({ columns: [className]});
         newDataFrame = newDataFrame.addColumn(className, column)
         setDataFrame(newDataFrame)

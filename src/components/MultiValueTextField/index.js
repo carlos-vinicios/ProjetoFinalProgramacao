@@ -4,35 +4,60 @@ import {
       FormControl,
       Input
 } from "@mui/material";
-import { makeStyles } from "@mui/styles";
+import { styled } from '@mui/system';
 
-const useStyles = makeStyles((theme) => ({
-	formControlRoot: {
+// import { makeStyles } from '@mui/material/styles';
+
+// const useStyles = makeStyles((theme) => ({
+// 	formControlRoot: {
+// 		display: "flex",
+// 		alignItems: "center",
+// 		gap: "8px",
+// 		width: "98%",
+// 		flexWrap: "wrap",
+// 		flexDirection: "row",
+// 		border:'2px solid lightgray',
+// 		padding:4,
+// 		borderRadius:'4px',
+// 		"&> div.container": {
+// 			gap: "6px",
+// 			display: "flex",
+// 			flexDirection: "row",
+// 			flexWrap: "wrap"
+// 		},
+// 		"& > div.container > span": {
+// 			backgroundColor: "gray",
+// 			padding: "1px 3px",
+// 			borderRadius: "4px"
+// 		}
+// 	}
+// }));
+
+const StyledFormControl = styled(FormControl)({
+	display: "flex",
+	alignItems: "center",
+	gap: "8px",
+	width: "98%",
+	flexWrap: "wrap",
+	flexDirection: "row",
+	border:'2px solid lightgray',
+	padding:4,
+	borderRadius:'4px',
+	"&> div.container": {
+		gap: "6px",
 		display: "flex",
-		alignItems: "center",
-		gap: "8px",
-		width: "98%",
-		flexWrap: "wrap",
-    flexDirection: "row",
-    border:'2px solid lightgray',
-    padding:4,
-    borderRadius:'4px',
-		"&> div.container": {
-			gap: "6px",
-			display: "flex",
-			flexDirection: "row",
-			flexWrap: "wrap"
-		},
-		"& > div.container > span": {
-			backgroundColor: "gray",
-			padding: "1px 3px",
-			borderRadius: "4px"
-		}
+		flexDirection: "row",
+		flexWrap: "wrap"
+	},
+	"& > div.container > span": {
+		backgroundColor: "gray",
+		padding: "1px 3px",
+		borderRadius: "4px"
 	}
-}));
+});
 
 export function MultiValueTextField({value, changeCallback}) {
-	const classes = useStyles();
+	// const classes = useStyles();
 	const [values, setValues] = useState(value);
 	const [currValue, setCurrValue] = useState("");
 
@@ -41,7 +66,7 @@ export function MultiValueTextField({value, changeCallback}) {
     }, [values])
 
 	const handleKeyUp = (e) => {
-		if (e.keyCode == 32) {
+		if (e.keyCode === 32) {
 			setValues((oldState) => [...oldState, e.target.value]);
 			setCurrValue("");
 		}
@@ -58,7 +83,7 @@ export function MultiValueTextField({value, changeCallback}) {
     }
 
 	return (
-        <FormControl classes={{ root: classes.formControlRoot }}>
+        <StyledFormControl>
             <div className={"container"}>
                 {values.map((item,index) => (
                     <Chip  size="small" onDelete={()=>handleDelete(item,index)} label={item}/>
@@ -69,6 +94,6 @@ export function MultiValueTextField({value, changeCallback}) {
                 onChange={handleChange}
                 onKeyDown={handleKeyUp}
             />
-        </FormControl>
+        </StyledFormControl>
 	);
 }

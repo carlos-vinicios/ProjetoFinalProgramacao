@@ -4,25 +4,20 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
 import IconButton from '@mui/material/IconButton';
 import ListItemText from '@mui/material/ListItemText';
-import { withStyles } from '@mui/styles';
+import { styled } from '@mui/system';
 
 import FolderIcon from '@mui/icons-material/Folder';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const ListItem = withStyles({
-    root: {
-      "&:hover": {
+const ListItem = styled(MuiListItem)({
+    "&:hover": {
         cursor: 'pointer',
         backgroundColor: "rgba(0,0,0,0.1)",
         "& .MuiListItemIcon-root": {
-          color: "white"
+            color: "white"
         }
-      }
-    },
-    selected: {
-
     }
-})(MuiListItem);
+});
 
 export function DatabaseItem({databaseName, deleteCallback}) {
     const navigate = useNavigate();

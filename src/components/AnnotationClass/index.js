@@ -10,6 +10,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import { MultiValueTextField } from '../MultiValueTextField';
+import { getRandomColor } from '../../utils/color';
 
 const titleStyle = {
     backgroundColor: 'primary.main',
@@ -37,7 +38,11 @@ export function AnnotionClass({open, handleClose, classes, addNewClass, removeCl
             alert("É necessário adicionar ao menos uma categoria")
             return
         }
-        addNewClass(className, dtype, categories)
+        var colors = []
+        for (let i = 0; i < categories.length; i++) {
+            colors.push(getRandomColor())
+        }
+        addNewClass(className, dtype, categories, colors)
         resetToDefault()
         handleClose();
     }
@@ -45,7 +50,7 @@ export function AnnotionClass({open, handleClose, classes, addNewClass, removeCl
     const handleChangeDtype = (event) => {
         setDtype(event.target.value);
         if(event.target.value === "Booleano"){
-            setCategories([1, 0])
+            setCategories([1])
         }
     }
 
