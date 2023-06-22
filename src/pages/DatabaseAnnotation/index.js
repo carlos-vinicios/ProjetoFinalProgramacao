@@ -11,6 +11,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { AnnotionClass } from "../../components/AnnotationClass";
 import { AnnotationExport } from "../../components/AnnotationExport";
+import { SketchPicker } from "react-color";
 
 const mainChartStyle = {
     minHeight: '80vh', width: '100%'
@@ -22,8 +23,8 @@ const databaseTitleStyle = {
 }
 
 const selectedPointListStyle = {
-    maxHeight: '55vh', overflow: 'auto',
-    height: '55vh',
+    maxHeight: '48vh', overflow: 'auto',
+    height: '48vh',
     border: '1px solid #ccc',
     borderRadius: '10px',
 }
@@ -52,10 +53,11 @@ export function DatabaseAnnotation(){
     const [yVariable, setYVariable] = useState("");
     
     const [classes, setClasses] = useState({});
-    const [renderedClasses, setRenderedClasses] = useState([]);
     const [dataClass, setDataClass] = useState("");
+    const [dataCategory, setDataCategory] = useState({value: "", index: -1});
     const [selectedPoints, setSelectedPoints] = useState([]);
     const [chartColors, setChartColors] = useState([]);
+    const [openColorPicker, setOpenColorPicker] = useState(false);
 
     useEffect(() => {
         if(mainPlot && xVariable && yVariable && dataFrame){
@@ -142,16 +144,6 @@ export function DatabaseAnnotation(){
     }, [xVariable, yVariable, dataClass])
 
     useEffect(() => {
-        var classLabels = []
-        if(Object.keys(classes).length > 0 && dataFrame !== null){
-            for(const key in classes)
-                for(var cat_index in classes[key].categories)
-                    classLabels.push(`${key} - ${classes[key].categories[cat_index]}`)
-        }
-        setRenderedClasses(classLabels)
-    }, [dataFrame, classes])
-
-    useEffect(() => {
         if(dataFrame)
             window.electron.saveDatabase(databaseFilename, toCSV(dataFrame)).then(response => {
                 if(!response.ok)
@@ -159,8 +151,16 @@ export function DatabaseAnnotation(){
             })
     }, [dataFrame, databaseFilename])
 
+    useEffect(() => {
+        var dataIndex = 0
+        if(dataClass !== "" && classes)
+            setDataCategory({
+                value: classes[dataClass].categories[dataIndex],
+                index: dataIndex
+            })
+    }, [dataClass])
+
     const pointsMark = (colors, key, category, categoryIndex) => {
-        console.log(colors, key, category, categoryIndex)
         var points_indexes = dataFrame.loc({ rows: dataFrame[key].eq(category)}).index
         for(var pp_index in points_indexes){
             colors[points_indexes[pp_index]] = classes[key].colors[categoryIndex]
@@ -244,28 +244,48 @@ export function DatabaseAnnotation(){
         setDataClass(event.target.value)
     }
 
+    const handleChangeDataCategory = (event) => {
+        var dataIndex = event.target.value.index
+        console.log(dataIndex)
+        setDataCategory({
+            value: event.target.value,
+            index: dataIndex
+        })    
+    }
+
+    const handleChangeCategoryColor = (color) => {
+        var newClasses = {...classes}
+        var newChartColors = [...chartColors]
+        var oldColor = classes[dataClass].colors[dataCategory.index]
+        newClasses[dataClass].colors[dataCategory.index] = color.hex
+        setClasses(newClasses)
+        window.electron.saveClasses(newClasses, databaseFilename).then(r => console.log(r))
+        
+        for(var c in newChartColors){
+            if(newChartColors[c] === oldColor){
+                newChartColors[c] = color.hex
+            }
+        }
+        updateChartColors(newChartColors, 0)
+        setOpenColorPicker(false)
+    }
+    
     const saveAnnotations = () => {
         var colors = chartColors
-
-        var class_split = dataClass.split("-")
-        var className = class_split[0].trim()
-        var category = class_split[1]
-        var categoryIndex = classes[className].color.indexOf(category)
-        var column = dataFrame[className].values
+        var column = dataFrame[dataClass].values
 
         for(var i in selectedPoints){
             var point = selectedPoints[i]
             var index = point.pointNumber
             var curveNumber = point.curveNumber
-            column[index] = category
-            colors[index] = classes[className].colors[categoryIndex]
+            column[index] = dataCategory.value
+            colors[index] = classes[dataClass].colors[dataCategory.index]
         }
         updateChartColors(colors, curveNumber)
-        var newDataFrame = dataFrame.drop({ columns: [className]});
-        newDataFrame = newDataFrame.addColumn(className, column)
+        var newDataFrame = dataFrame.drop({ columns: [dataClass]});
+        newDataFrame = newDataFrame.addColumn(dataClass, column)
         setDataFrame(newDataFrame)
         setSelectedPoints([])
-        setDataClass('')
     }
 
     const openDialogExport = () => {
@@ -281,6 +301,10 @@ export function DatabaseAnnotation(){
             return "block"
         
         return "none"
+    }
+
+    const openSketchColorPicker = () => {
+        setOpenColorPicker(true)
     }
 
     return (
@@ -309,7 +333,7 @@ export function DatabaseAnnotation(){
                         >
                             {
                                 dataFrame !== null && dataFrame.columns.map(element => (
-                                    <MenuItem value={element}>{element}</MenuItem>
+                                    <MenuItem key={element} value={element}>{element}</MenuItem>
                                 ))
                             }
                         </Select>
@@ -327,7 +351,7 @@ export function DatabaseAnnotation(){
                         >
                             {
                                 dataFrame !== null && dataFrame.columns.map(element => (
-                                    <MenuItem value={element}>{element}</MenuItem>
+                                    <MenuItem key={element} value={element}>{element}</MenuItem>
                                 ))
                             }
                         </Select>
@@ -337,12 +361,6 @@ export function DatabaseAnnotation(){
                     <Paper elevation={3} id='main-chart' sx={mainChartStyle}>
                     </Paper>
                 </Grid>
-                {/* <Grid item lg={12}>
-                    <Typography variant="p">Visualização da Base Anotada:</Typography>
-                    <Paper elevation={3} sx={databasePreviewStyle} id='table-view'>
-                        createPreviewTable()
-                    </Paper>
-                </Grid> */}
             </Grid>
             <Grid item container lg={3} md={3} sm={3} xs={3} spacing={2}>
                 <Grid item container lg={12} md={12} sm={12} xs={12} spacing={2}>
@@ -355,10 +373,10 @@ export function DatabaseAnnotation(){
                                 value={dataClass}
                                 label="class-select"
                                 onChange={handleChangeDataClass}
-                                >
+                            >
                                 {
-                                    dataFrame !== null && renderedClasses.map(element => (
-                                        <MenuItem value={element}>{element}</MenuItem>
+                                    dataFrame !== null && Object.keys(classes).map(element => (
+                                        <MenuItem key={element} value={element}>{element}</MenuItem>
                                     ))
                                 }
                             </Select>
@@ -373,7 +391,53 @@ export function DatabaseAnnotation(){
                             <EditIcon />
                         </IconButton>
                     </Grid>
-                    <Grid item lg={12} sx={{height: "62vh"}}>
+                    <Grid item lg={10} sx={{height: "7.6vh"}}>
+                        <FormControl fullWidth>
+                            <InputLabel 
+                                id="category-select-label" 
+                                sx={{display: showPointAnnotationElement()}}
+                            >
+                                Categoria
+                            </InputLabel>
+                            <Select
+                                sx={{display: showPointAnnotationElement()}}
+                                labelId="category-select-label"
+                                id="category-select"
+                                disabled={classes[dataClass]?.categories.length === 1}
+                                value={dataCategory.value}
+                                label="category-select"
+                                onChange={handleChangeDataCategory}
+                            >
+                                {
+                                    (dataFrame !== null && dataClass !== "") && classes[dataClass].categories.map(element => (
+                                        <MenuItem key={element} value={element}>{element}</MenuItem>
+                                    ))
+                                }
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item lg={2}>
+                        <Paper 
+                            sx={{
+                                display: showPointAnnotationElement(),
+                                width: "5vh", height: "5.3vh", 
+                                backgroundColor: classes[dataClass]?.colors[dataCategory.index]
+                            }}
+                            onClick={openSketchColorPicker}
+                        >
+                        </Paper>
+                        <Paper sx={{
+                            display: openColorPicker ? "block" : "none",
+                            position: "absolute",
+                            right: 10
+                        }}>
+                            <SketchPicker 
+                                color={classes[dataClass]?.colors[dataCategory.index]}
+                                onChangeComplete={handleChangeCategoryColor}
+                            />
+                        </Paper>
+                    </Grid>
+                    <Grid item lg={12} sx={{height: "55vh"}}>
                         <Typography variant="h6" display={showPointAnnotationElement()}>Pontos Selecionados:</Typography>
                         <List sx={{...selectedPointListStyle, display: showPointAnnotationElement()}}>
                             {renderSelectedPoints()}
