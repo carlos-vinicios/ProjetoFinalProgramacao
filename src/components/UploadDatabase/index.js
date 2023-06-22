@@ -31,6 +31,12 @@ export function UploadDatabase({filePath, open, handleClose}) {
     const [xVariable, setXVariable] = useState("")
     const [yVariable, setYVariable] = useState("")
 
+    const resetToDefault = () => {
+        setDataFrame(null)
+        setXVariable("")
+        setYVariable("")
+    }
+    
     useEffect(() => {
         if(filePath !== ""){
             window.electron.readDatabase(filePath).then(fileContent => {
@@ -56,8 +62,7 @@ export function UploadDatabase({filePath, open, handleClose}) {
         try {
             setDataFrame(dataFrame.asType(name, value))
         } catch (error) {
-            //TODO: emitir um alerta visual para o usuário
-            console.log("Casting error:", error)
+            alert("Casting error:", error)
         }
     }
 
@@ -89,11 +94,17 @@ export function UploadDatabase({filePath, open, handleClose}) {
         var pathSplit = filePath.split('/')
         var filename = pathSplit[pathSplit.length-1]
         window.electron.saveDatabase(filename, toCSV(dataFrame)).then(response => {
-            if(response.ok)
+            if(response.ok){
+                resetToDefault()
                 handleClose()
-            else
-                console.log(response.msg)
+            }            
+            alert(response.msg)
         })
+    }
+
+    const handleCancel = () => {
+        resetToDefault()
+        handleClose()
     }
     
     return (
@@ -101,7 +112,7 @@ export function UploadDatabase({filePath, open, handleClose}) {
             maxWidth="lg"
             fullWidth
             open={open}
-            onClose={handleClose}
+            onClose={() => {}}
         >
             <DialogTitle id="upload-database-dialog-title" sx={titleStyle}>
                 <Typography variant="h5">Carregando uma Nova Base</Typography>
@@ -171,13 +182,15 @@ export function UploadDatabase({filePath, open, handleClose}) {
                         </Grid>
                         <Grid item lg={12}>
                             <Paper elevation={3} id='preview-chart' sx={previewChartStyle}>
-
                             </Paper>
                         </Grid>
                     </Grid>
                 </Grid>
             </DialogContent>
             <DialogActions>
+                <Button variant='contained' color='error' onClick={handleCancel}>
+                    Cancelar
+                </Button>
                 <Button variant='contained' color='primary' onClick={handleSave}>
                     Salvar
                 </Button>

@@ -1,5 +1,6 @@
 import { Route, Routes, BrowserRouter } from "react-router-dom";
 import { MainWindow } from "../pages/mainWindow";
+import { DatabaseAnnotation } from "../pages/DatabaseAnnotation";
 // import history from '../history';
 
 function RoutesIndex() {
@@ -17,6 +18,12 @@ function RoutesIndex() {
                     path="main-window"
                     element={
                         <MainWindow />
+                    }
+                />
+                <Route
+                    path="database-annotation"
+                    element={
+                        <DatabaseAnnotation />
                     }
                 />
             </Routes>

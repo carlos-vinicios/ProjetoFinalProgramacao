@@ -11,6 +11,7 @@ const path = require('path');
 const url = require('url');
 
 const databasesPath = "./databases"
+const configsPath = "./databasesConfig"
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -80,14 +81,19 @@ app.whenReady().then(() => {
       return response;
     });
 
-    ipcMain.handle("listDatabases", async (event, path) => {
+    ipcMain.handle("listDatabases", async (event) => {
+        if (!fs.existsSync(databasesPath))
+            fs.mkdirSync(databasesPath, {recursive: true})
+        
         return fs.readdirSync(databasesPath)
     });
 
     ipcMain.handle("deleteDatabase", async (event, filename) => {
         var response = {msg: "Base de Dados removida com sucesso", ok: true}
         try {
-            fs.rmSync(databasesPath + "/" + filename)
+            var databaseConfigFile = filename.replace(".csv", ".json")
+            fs.rmSync(path.join(configsPath, databaseConfigFile))
+            fs.rmSync(path.join(databasesPath, filename))
         } catch (error) {
             response.msg = "Falha na remoção: " + error
             response.ok = false
@@ -95,19 +101,60 @@ app.whenReady().then(() => {
         return response
     });
 
-    ipcMain.handle('readDatabase', async (event, path) => {
-        var fileContent = fs.readFileSync(path, 'utf8');
+    ipcMain.handle('readDatabase', async (event, filePath) => {
+        if(filePath === path.basename(filePath))
+            filePath = path.join(databasesPath, filePath);
+        var fileContent = fs.readFileSync(filePath, 'utf8');
         return fileContent;
     });
 
     ipcMain.handle('saveDatabase', async (event, filename, dataContent) => {
         var response = {msg: "Conteúdo Salvo", ok: true}
+        if (!fs.existsSync(databasesPath))
+            fs.mkdirSync(databasesPath, {recursive: true})
+
         try{
-            fs.writeFileSync(databasesPath + "/" + filename, dataContent)
+            fs.writeFileSync(path.join(databasesPath, filename), dataContent)
         }catch(err){
-            response.msg = "Falha no salvamento" + err
+            response.msg = "Falha no salvamento: " + err
             response.ok = false
         }
         return response
     });
+
+    ipcMain.handle('exportDatabase', async (event, filePath, dataContent) => {
+        var response = {msg: "Conteúdo Salvo", ok: true}
+        try{
+            fs.writeFileSync(filePath, dataContent)
+        }catch(err){
+            response.msg = "Falha no salvamento: " + err
+            response.ok = false
+        }
+        return response
+    });
+
+    ipcMain.handle('readClasses', async (event, databaseName) => {
+        var databaseConfigFile = databaseName.replace(".csv", ".json")
+        try{
+            var databaseConfig = fs.readFileSync(path.join(configsPath, databaseConfigFile), 'utf8')
+            return JSON.parse(databaseConfig)
+        }catch(err){
+            return {}
+        }
+    });
+
+    ipcMain.handle('saveClasses', async (event, dataContent, databaseName) => {
+        var response = {msg: "Conteúdo Salvo", ok: true}
+        var databaseConfigFile = databaseName.replace(".csv", ".json")
+        if (!fs.existsSync(configsPath))
+            fs.mkdirSync(configsPath, {recursive: true})
+
+        try{
+            fs.writeFileSync(path.join(configsPath, databaseConfigFile), JSON.stringify(dataContent))
+        }catch(err){
+            response.msg = "Falha no salvamento: " + err
+            response.ok = false
+        }
+        return response
+    })
 });

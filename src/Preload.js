@@ -5,5 +5,8 @@ contextBridge.exposeInMainWorld('electron', {
     loadDatabases: () => ipcRenderer.invoke('listDatabases'),
     readDatabase: (filePath) => ipcRenderer.invoke('readDatabase', filePath),
     saveDatabase: (filename, dataContent) => ipcRenderer.invoke('saveDatabase', filename, dataContent),
-    deleteDatabase: (databaseName) => ipcRenderer.invoke('deleteDatabase', databaseName)
+    exportDatabase: (filePath, dataContent) => ipcRenderer.invoke('exportDatabase', filePath, dataContent),
+    deleteDatabase: (databaseName) => ipcRenderer.invoke('deleteDatabase', databaseName),
+    readClasses: (filename) => ipcRenderer.invoke('readClasses', filename),
+    saveClasses: (dataContent, databaseName) => ipcRenderer.invoke('saveClasses', dataContent, databaseName),
 });

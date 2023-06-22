@@ -1,24 +1,33 @@
 import { useState, useEffect } from 'react';
-import Grid from '@mui/material/Unstable_Grid2'; // Grid version 2
-import { Button, Typography } from '@mui/material';
-import List from '@mui/material/List'
+import { Button, Typography, Grid } from '@mui/material';
+import List from '@mui/material/List';
 
 import { DatabaseItem } from '../../components/DatabaseItem';
 import { UploadDatabase } from '../../components/UploadDatabase';
+import AlertDialog from '../../components/AlertDialog';
 
 const databaseListStyle = { 
     bgcolor: 'background.paper',
     borderRadius: '10px',
     border: '1px solid #d3d3d3',
-    margin: 2,
-    minHeight: "300px"
+    width: '99%',
+    height: '86vh',
+    maxHeight: '86vh',
+    ml: 2
+}
+
+const headerTitleStyle = {
+    textAlign: "center",
+    m: 2
 }
 
 export function MainWindow() {
     const [databases, setDatabases] = useState([])
     const [uploadOpen, setUploadOpen] = useState(false)
     const [filePath, setFilePath] = useState("")
-    
+
+    const [deleteDialog, setDeleteDialog] = useState({open: false, databaseName: ""});
+
     const listDatabases = () => {
         window.electron.loadDatabases().then(databases => {
             setDatabases(databases)
@@ -37,8 +46,10 @@ export function MainWindow() {
         };
         window.electron.openDialog('showOpenDialog', dialogConfig)
             .then(result => {
-                setFilePath(result.filePaths[0]);
-                setUploadOpen(true)
+                if(!result.canceled){
+                    setFilePath(result.filePaths[0]);
+                    setUploadOpen(true)
+                }
             });
     }
     
@@ -47,29 +58,49 @@ export function MainWindow() {
         listDatabases()
     }
 
-    const handleDeleteDatabase = (databaseName) => {
-        window.electron.deleteDatabase(databaseName).then(response => {
-            if(response.ok){
+    const deleteDatabaseFile = () => {
+        if(deleteDialog.databaseName === ""){
+            console.log("Falha na remoção do arquivo, nome da base não informado")
+            return
+        }
+         
+        window.electron.deleteDatabase(deleteDialog.databaseName).then(response => {
+            if(response.ok)
                 listDatabases()
-            }
-            console.log(response)
+            
+            setDeleteDialog({open: false, databaseName: ""})
+            alert(response.msg)
         })
+    }
+    
+    const handleDeleteDatabase = (databaseName) => {
+        setDeleteDialog({open: true, databaseName})
+    }
+
+    const handleCloseDeleteDialog = (option) => {
+        if(option){
+            deleteDatabaseFile()
+        }
+        setDeleteDialog({open: false, databaseName: ""})
     }
 
     return (
-        <Grid container justifyContent='center' alignItems='center'>
-            <Typography variant='h3'>Sistema de Análise de Curvas</Typography>
+        <Grid container spacing={2}>
+            <Grid item lg={12}>
+                <Typography variant='h3' sx={headerTitleStyle}>Sistema de Análise de Curvas</Typography>
+            </Grid>
             <Grid item lg={10}>
                 <List sx={databaseListStyle}>
                     {databases.map(database => (
                         <DatabaseItem 
                             databaseName={database} 
                             deleteCallback={handleDeleteDatabase}
+                            key={database}
                         />
                     ))}
                 </List>
             </Grid>
-            <Grid item lg={2} spacing={2}>
+            <Grid item lg={2}>
                 <Button 
                     variant='contained' color='primary'
                     onClick={loadDatabase}
@@ -77,11 +108,18 @@ export function MainWindow() {
                     sx={{
                         height: "5rem"
                     }}
+                    data-testid="loadDatabaseButton"
                 >
                     Carregar Base
                 </Button>
             </Grid>
             <UploadDatabase filePath={filePath} open={uploadOpen} handleClose={closeUploadDatabase} />
+            <AlertDialog 
+                title="Remover base de dados"
+                description="Vocé tem certeza que deseja remover esta base de dados?" 
+                open={deleteDialog.open} 
+                handleClose={handleCloseDeleteDialog}
+            />
         </Grid>
     )
 }
