@@ -1,4 +1,4 @@
-import { useState, useEffect} from "react";
+import { useRef, useState, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { readCSV, toCSV } from "danfojs"
 import { 
@@ -42,6 +42,8 @@ const defaultChartColor = "#1f77b4"
 
 export function DatabaseAnnotation(){
     const navigate = useNavigate();
+    const colorPickerRef = useRef();
+    const colorRef = useRef();
 
     const [databaseFilename, setDatabaseFilename] = useState("");
     const [dataFrame, setDataFrame] = useState(null);
@@ -79,7 +81,6 @@ export function DatabaseAnnotation(){
                 var fileBlob = new Blob([fileContent])
                 readCSV(fileBlob).then(df => {
                     setDataFrame(df)
-                    setChartColors(Array(df.shape[0]).fill(defaultChartColor))
                 })
             })
             window.electron.readClasses(databaseFilename).then(classes => {
@@ -90,11 +91,11 @@ export function DatabaseAnnotation(){
     }, [databaseFilename])
 
     useEffect(() => {
-        var colors = chartColors
         if(
             dataFrame !== null && dataClass !== ""
             && xVariable !== "" && yVariable !== ""
         ){
+            var colors = Array(dataFrame.shape[0]).fill(defaultChartColor)
             var class_split = dataClass.split("-")
             var className = class_split[0].trim()
             for(var cat_index in classes[className].categories){
@@ -158,7 +159,16 @@ export function DatabaseAnnotation(){
                 value: classes[dataClass].categories[dataIndex],
                 index: dataIndex
             })
-    }, [dataClass])
+    }, [dataClass, classes])
+
+    useEffect(() => {
+        window.onclick = (event) => {
+            var colorClicked = colorRef.current && !colorRef.current.contains(event.target)
+            var colorPickerClicked = colorPickerRef.current && !colorPickerRef.current.contains(event.target)
+            if (colorClicked && colorPickerClicked && openColorPicker)
+                setOpenColorPicker(false)
+        }
+    }, [openColorPicker]);
 
     const pointsMark = (colors, key, category, categoryIndex) => {
         var points_indexes = dataFrame.loc({ rows: dataFrame[key].eq(category)}).index
@@ -245,8 +255,7 @@ export function DatabaseAnnotation(){
     }
 
     const handleChangeDataCategory = (event) => {
-        var dataIndex = event.target.value.index
-        console.log(dataIndex)
+        var dataIndex = classes[dataClass].categories.indexOf(event.target.value)
         setDataCategory({
             value: event.target.value,
             index: dataIndex
@@ -306,7 +315,7 @@ export function DatabaseAnnotation(){
     const openSketchColorPicker = () => {
         setOpenColorPicker(true)
     }
-
+    
     return (
         <Grid container lg={12} md={12} sm={12} xs={12} spacing={2} pl={2}>
             <IconButton 
@@ -392,15 +401,13 @@ export function DatabaseAnnotation(){
                         </IconButton>
                     </Grid>
                     <Grid item lg={10} sx={{height: "7.6vh"}}>
-                        <FormControl fullWidth>
-                            <InputLabel 
-                                id="category-select-label" 
-                                sx={{display: showPointAnnotationElement()}}
-                            >
+                        <FormControl fullWidth sx={{
+                            display: selectedPoints.length > 0 ? "inline-flex" : "none"
+                        }}>
+                            <InputLabel id="category-select-label" >
                                 Categoria
                             </InputLabel>
                             <Select
-                                sx={{display: showPointAnnotationElement()}}
                                 labelId="category-select-label"
                                 id="category-select"
                                 disabled={classes[dataClass]?.categories.length === 1}
@@ -417,24 +424,30 @@ export function DatabaseAnnotation(){
                         </FormControl>
                     </Grid>
                     <Grid item lg={2}>
+                        <div ref={colorRef}>
                         <Paper 
                             sx={{
                                 display: showPointAnnotationElement(),
-                                width: "5vh", height: "5.3vh", 
+                                width: "5vh", height: "5.3vh",
+                                cursor: 'pointer',
                                 backgroundColor: classes[dataClass]?.colors[dataCategory.index]
                             }}
                             onClick={openSketchColorPicker}
                         >
                         </Paper>
+                        </div>
                         <Paper sx={{
                             display: openColorPicker ? "block" : "none",
                             position: "absolute",
-                            right: 10
+                            right: 10,
+                            zIndex: 7000
                         }}>
-                            <SketchPicker 
+                            <div ref={colorPickerRef}>
+                            <SketchPicker                            
                                 color={classes[dataClass]?.colors[dataCategory.index]}
                                 onChangeComplete={handleChangeCategoryColor}
                             />
+                            </div>
                         </Paper>
                     </Grid>
                     <Grid item lg={12} sx={{height: "55vh"}}>
