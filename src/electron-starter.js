@@ -82,6 +82,9 @@ app.whenReady().then(() => {
     });
 
     ipcMain.handle("listDatabases", async (event) => {
+        if (!fs.existsSync(databasesPath))
+            fs.mkdirSync(databasesPath, {recursive: true})
+        
         return fs.readdirSync(databasesPath)
     });
 
@@ -107,6 +110,9 @@ app.whenReady().then(() => {
 
     ipcMain.handle('saveDatabase', async (event, filename, dataContent) => {
         var response = {msg: "Conteúdo Salvo", ok: true}
+        if (!fs.existsSync(databasesPath))
+            fs.mkdirSync(databasesPath, {recursive: true})
+
         try{
             fs.writeFileSync(path.join(databasesPath, filename), dataContent)
         }catch(err){
@@ -140,6 +146,9 @@ app.whenReady().then(() => {
     ipcMain.handle('saveClasses', async (event, dataContent, databaseName) => {
         var response = {msg: "Conteúdo Salvo", ok: true}
         var databaseConfigFile = databaseName.replace(".csv", ".json")
+        if (!fs.existsSync(configsPath))
+            fs.mkdirSync(configsPath, {recursive: true})
+
         try{
             fs.writeFileSync(path.join(configsPath, databaseConfigFile), JSON.stringify(dataContent))
         }catch(err){
