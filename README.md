@@ -42,6 +42,6 @@ sincronizando a comunicação entre eles.
 
 ## Mais Informações
 
-Em caso de dúvidas na utilização do sistema, na raiz do projeto encontra-se a pasta "documentation", que contém [manual de utilização do sistema](documentation/final_report.pdf).
+Em caso de dúvidas na utilização do sistema, na raiz do projeto encontra-se a pasta "documentation", que contém [manual de utilização do sistema](documentation/FinalReport.pdf).
 
 Em caso de problemas ou dúvidas que não estejam presentes na documentação, sinta-se livre para abrir uma issue.
